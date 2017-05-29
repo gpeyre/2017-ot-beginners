@@ -12,12 +12,10 @@ p_exp = 1.05; % exposant for transport
 
 N = 6;
 N = 70;
+N = Inf; 
 
 name = 'paris.jpg';
 f = imread(name);
-
-clf; imagesc(f); axis image; axis off; colormap gray(256);
-hold on;
 
 
 col = {'r' 'b'};
@@ -25,14 +23,22 @@ ms = 40;
 
 if N==6
     load n6-positions
-elseif N<10
+elseif N==Inf
+    clf; imagesc(f); axis image; axis off; colormap gray(256);
+    hold on;
     A = {[] []};
     for k=1:2
-        for i=1:N
-            [x,y] = ginput(1);
+        s = 0;
+        while s<N
+            s = s+1;
+            [x,y,b] = ginput(1);
+            if b~=1
+                break;
+            end
             plot(x,y,'.', 'color', col{k}, 'MarkerSize', ms);
             A{k}(:,end+1) = [x;y];
         end
+        N = size(A{k},2);
     end
 else
     [n,p] = size(f);
@@ -53,18 +59,20 @@ saveas(gcf, [rep 'n' num2str(N) '-input-seeds.png'], 'png');
 
 % distance matrix
 c = distmat(A{1},A{2}).^p_exp;
+c = c/max(c(:))*35;
 if do_round
-    c = round(c/max(c(:))*35);
+    c = round(c);
 end
 
-
 % best 
+figure(1); 
 [S,Cost] = Hungarian(c); p = mat2perm(S);
 cost = perm_cost(p,c);
 clf; plot_permutation(p,A,f);
 saveas(gcf, [rep 'n' num2str(N) '-best.png'], 'png');
 
 % worst
+figure(2); 
 [S,Cost] = Hungarian(-c);  p = mat2perm(S);
 cost_worst = -perm_cost(p,-c);
 clf; plot_permutation(p,A,f);
